@@ -46,7 +46,8 @@ class BooksScraperPipeline:
             ))
             self.connection.commit()
         except psycopg2.Error as e:
-            spider.logger.error(f"Error: {e}")
+            self.connection.rollback()
+            spider.logger.error(f"Error inserting item: {e} - Item: {item}")
             raise DropItem(f"Error inserting item: {e}")
 
         return item
