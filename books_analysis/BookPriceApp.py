@@ -9,12 +9,19 @@ class BookPricePredictionApp:
         self.root = root
         self.root.title("BookPriceApp")
 
+        self.class_descriptions = {
+            0: "Cena <= 500 dinara",
+            1: "501 - 1500 dinara",
+            2: "1501 - 3000 dinara",
+            3: "3001 - 5000 dinara",
+            4: "5001 - 10000 dinara",
+            5: "Cena > 10000 dinara"
+        }
 
         self.create_form()
 
     def create_form(self):
         # Labele za unos potrebnih polja
-
         tk.Label(self.root, text="Author").grid(row=0, column=0)
         self.author_entry = tk.Entry(self.root)
         self.author_entry.grid(row=0, column=1)
@@ -44,9 +51,14 @@ class BookPricePredictionApp:
         self.format_entry = tk.Entry(self.root)
         self.format_entry.grid(row=6, column=1)
 
+        # Padajući meni za izbor modela
+        tk.Label(self.root, text="Select Model").grid(row=7, column=0)
+        self.model_selection = ttk.Combobox(self.root, values=["Linear Regression", "Logistic Regression (OvR)", "Logistic Regression (Multinomial)"])
+        self.model_selection.grid(row=7, column=1)
+
         # Dugme za predikciju cene
         self.predict_button = tk.Button(self.root, text="Predict Price", command=self.predict_price)
-        self.predict_button.grid(row=7, column=1)
+        self.predict_button.grid(row=8, column=1)
 
     def predict_price(self):
         try:
@@ -61,16 +73,32 @@ class BookPricePredictionApp:
             # Kreiramo niz feature-a za predikciju
             input_features = np.array([[year, pages, binding_hard, binding_soft]])
 
-            # Učitavanje treniranog modela
-            model = joblib.load('trained_custom_linear_regression_model.pkl')
-
             # Učitavanje skalera za normalizaciju unosa
             scaler = joblib.load('scaler.pkl')
             input_scaled = scaler.transform(input_features)
 
-            # Predikcija cene knjige
-            predicted_price = model.predict(input_scaled)
-            messagebox.showinfo("Predicted Price", f"The predicted price of the book is: {predicted_price[0][0]:.2f}")
+            # Provera izbora modela
+            selected_model = self.model_selection.get()
+
+            if selected_model == "Linear Regression":
+                # Učitavanje linearnog regresionog modela
+                model = joblib.load('custom_linear_regression_model.pkl')
+                predicted_price = model.predict(input_scaled)
+                messagebox.showinfo("Predicted Price",
+                                    f"The predicted price of the book is: {predicted_price[0][0]:.2f}")
+
+            elif selected_model == "Logistic Regression (OvR)" or selected_model == "Logistic Regression (Multinomial)":
+                # Učitavanje logističkog regresionog modela
+                if selected_model == "Logistic Regression (OvR)":
+                    model = joblib.load('ovr_logistic_regression_model.pkl')
+                else:
+                    model = joblib.load('multinomial_logistic_regression_model.pkl')
+
+                predicted_class = model.predict(input_scaled)[0]
+                class_description = self.class_descriptions.get(predicted_class, "Unknown class")
+
+                messagebox.showinfo("Predicted Class",
+                                    f"The predicted class of the book is: {predicted_class} ({class_description})")
 
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred: {e}")
