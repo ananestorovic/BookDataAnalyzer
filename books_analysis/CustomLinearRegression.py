@@ -2,7 +2,7 @@ import numpy as np
 
 
 class CustomLinearRegression:
-    def __init__(self, alpha=0.01, iterations=300, threshold=1e-4):
+    def __init__(self, alpha=0.09, iterations=63000, threshold=1e-5):
         self.alpha = alpha
         self.iterations = iterations
         self.threshold = threshold
@@ -28,13 +28,14 @@ class CustomLinearRegression:
             # Funkcija greske
             cur_cost = np.mean((y - pred_y) ** 2)
 
+            print(f"cost: {cur_cost}")
+
             # Provera uslova za zaustavljanje
             if abs(cur_cost - prev_cost) < self.threshold:
                 print(f"Stopped at iter {iteration + 1}, cost diff {abs(cur_cost - prev_cost)} < {self.threshold}")
                 break
 
             prev_cost = cur_cost
-            print('MOJ ALGORITAM!!!!!!!')
 
     # Funkcija za predikciju
     def predict(self, X):

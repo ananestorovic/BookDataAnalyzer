@@ -7,6 +7,7 @@ from sklearn.preprocessing import MinMaxScaler
 from CustomLinearRegression import CustomLinearRegression
 from sklearn.linear_model import LinearRegression
 
+
 def process_and_train_linear_regression_model():
     # Kreiranje konekcije ka PostgreSQL bazi podataka
     db_url = 'postgresql+psycopg2://postgres:postgres@localhost:5432/books_database'
@@ -16,14 +17,8 @@ def process_and_train_linear_regression_model():
     books_df = pd.read_sql_table('preprocessed_books', con=db_engine)
 
     # Uklanjanje kolona koje nece biti koriscene prilikom treniranja
-    X = books_df.drop(columns=['title', 'price', 'format', 'description'])
+    X = books_df.drop(columns=['code', 'title', 'author', 'price', 'format', 'category', 'publisher', 'description'])
     y = books_df['price']
-
-    # Pretvaranje iz tekstualne u integer vrednost
-    X['code'] = X['code'].astype(int)
-
-    # Kategorisanje kolona 'author', 'category', i 'publisher' koriscenjem OneHotEncoding tehnike
-    X = pd.get_dummies(X, columns=['author', 'category', 'publisher'], dtype=int)
 
     # One Hot Encoding za kolonu 'binding' koja samo sadrži vrednosti 'Tvrd' i 'Broš'
     X = pd.get_dummies(X, columns=['binding'], dtype=int)
@@ -31,31 +26,6 @@ def process_and_train_linear_regression_model():
     # Pretvaranje 'year' i 'pages' u integer vrednosti
     X['year'] = X['year'].astype(int)
     X['pages'] = X['pages'].astype(int)
-
-    # X['format'] = X['format'].str.replace(r'[^\d.x]', '', regex=True)
-    #
-    # # Funkcija za obradu formata
-    # def process_format(format_value):
-    #     # Očisti nevalidne karaktere pre obrade
-    #     format_value = format_value.replace('X', 'x').replace(',', '.').strip()
-    #
-    #     # Deljenje formata na širinu i visinu
-    #     dimensions = format_value.split('x')
-    #
-    #     if len(dimensions) == 1:
-    #         width = height = float(dimensions[0])
-    #     else:
-    #         width = float(dimensions[0])
-    #         height = float(dimensions[1])
-    #
-    #     return width, height
-    #
-    # # Primena funkcije za obradu formata
-    # X['width'], X['height'] = zip(*X['format'].apply(process_format))
-    # X['area'] = X['width'] * X['height']  # Izračunavanje površine
-    #
-    # # Uklanjanje kolona 'width', 'height' i 'format' nakon računanja površine
-    # X.drop(columns=['width', 'height', 'format'], inplace=True)
 
     # Podela podataka na trening i test set
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
@@ -70,6 +40,8 @@ def process_and_train_linear_regression_model():
     scaling = MinMaxScaler()
     X_train_scaled = scaling.fit_transform(X_train)
     X_test_scaled = scaling.transform(X_test)
+
+    joblib.dump(scaling, 'scaler.pkl') #sacuvati skaler u fajl scaler.pkl
 
     # Treniranje modela pomocu custom linearne regresije
     custom_model = CustomLinearRegression()
@@ -91,4 +63,3 @@ def process_and_train_linear_regression_model():
     joblib.dump(linear_regression_model, 'trained_linear_regression_model.pkl')
 
     print("Modeli su uspešno sačuvani.")
-
