@@ -27,7 +27,7 @@ class CustomLogisticRegression:
             np.exp(np.clip(z, -709, 709))
             / (
                 1 + np.exp(np.clip(z, -709, 709))
-            ),  # Sprečava overflow/underflow sa clippingom
+            ),
         )
 
     def softmax(self, z):
@@ -66,7 +66,7 @@ class CustomLogisticRegression:
             for i in range(self.max_iterations):
                 prev_weights = np.copy(weights)
 
-                indices = np.random.permutation(num_samples)
+                indices = np.random.permutation(num_samples) # Nasumično mešanje podataka
                 X_shuffled = X[indices]
                 y_shuffled = y_binary[indices]
 
@@ -131,11 +131,11 @@ class CustomLogisticRegression:
         for j, (weights, intercept) in enumerate(zip(self.weights, self.intercepts)):
             class_scores[:, j] = np.dot(X, weights) + intercept
 
-        return self.classes[np.argmax(class_scores, axis=1)]
+        return self.classes[np.argmax(class_scores, axis=1)]  # Izbor klase sa najvećim skorom
 
     def _predict_multinomial(self, X):
         scores = np.dot(X, self.weights.T) + self.intercepts
-        return self.classes[np.argmax(scores, axis=1)]
+        return self.classes[np.argmax(scores, axis=1)]  # Izbor klase sa najvećim skorom
 
     def predict_proba(self, X):
         # Računanje verovatnoće za svaku klasu

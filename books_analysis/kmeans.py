@@ -201,22 +201,29 @@ def preprocess_data():
     return X_scaled.tolist(), y.tolist(), scaler, books_df
 
 
+# Računa se čistoća klasterizacije koja predstavlja procenat ispravno klasifikovanih tačaka u klasterima
 def evaluate_clustering(assignments, true_labels):
     cluster_labels = defaultdict(list)
+    # assignment je dodeljeni klaster, a label je tačna oznaka klase
     for assignment, label in zip(assignments, true_labels):
         cluster_labels[assignment].append(label)
 
     purity = sum(
-        max(labels.count(i) for i in set(labels)) for labels in cluster_labels.values()
+        max(labels.count(i) for i in set(labels))
+        for labels in cluster_labels.values()  # Pronalaženje dominantne klase u klasteru
     ) / len(assignments)
     return purity
 
 
+# 3D vizualizacija klastera knjiga
 def visualize_clusters(X, assignments, centers, scaler):
+    # Vraćaju se podaci u originalni opseg pre skaliranja
     X_inv = scaler.inverse_transform(X)
+
     df = pd.DataFrame(X_inv, columns=["year", "pages", "binding_Broš", "binding_Tvrd"])
     df["cluster"] = assignments
 
+    # Kreiranje 3D figure za prikazivanje klastera
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(111, projection="3d")
 
@@ -224,7 +231,10 @@ def visualize_clusters(X, assignments, centers, scaler):
         df["year"], df["pages"], df["binding_Tvrd"], c=df["cluster"], cmap="viridis"
     )
 
+    # Inverzna transformacija centara klastera nazad u originalni opseg
     centers_inv = scaler.inverse_transform(centers)
+
+    # Centara klastera biće označeni kao crvene zvezdice
     ax.scatter(
         centers_inv[:, 0],
         centers_inv[:, 1],
@@ -235,25 +245,37 @@ def visualize_clusters(X, assignments, centers, scaler):
         marker="*",
     )
 
+    # Postavljanje oznaka za ose
     ax.set_xlabel("Godina")
     ax.set_ylabel("Broj stranica")
     ax.set_zlabel("Povez (0=Broš, 1=Tvrd)")
+
+    # Postavljanje naslova grafikona
     ax.set_title("3D vizualizacija klastera knjiga")
 
+    # Dodavanje colorbar-a koji prikazuje klastere sa različitim bojama
     plt.colorbar(scatter)
-    #plt.savefig(fname="kmeans.png")
+
+    # Čuvanje grafikona kao slike pod nazivom "kmeans.png"
+    # plt.savefig(fname="kmeans.png")
+
+    # Prikaz grafikona na ekranu
     plt.show()
 
 
+# Funkcija analizira rezultate klasterizacije i za svaki klaster računa prosečnu cenu knjiga unutar tog klastera
 def analyze_clusters(X, assignments, books_df):
     df = pd.DataFrame(X, columns=["year", "pages", "binding_Broš", "binding_Tvrd"])
     df["cluster"] = assignments
     df["price"] = books_df["price"]
 
     for i in range(max(assignments) + 1):
+        # Filtrira podatke tako da uzme samo one knjige koje pripadaju trenutnom klasteru
         cluster_data = df[df["cluster"] == i]
+        # Ispisuje osnovne statistike za trenutni klaster
         print(f"\nKlaster {i}:")
         print(cluster_data.describe())
+        # Računa i ispisuje prosečnu cenu knjiga u ovom klasteru
         print(f"\nProsečna cena: {cluster_data['price'].mean():.2f}")
 
 
@@ -282,7 +304,7 @@ def kmeans_run():
         "scaler_mean": scaler.mean_.tolist(),
         "scaler_scale": scaler.scale_.tolist(),
     }
-    #save_model(model_data)
+    # save_model(model_data)
 
     # Učitavanje modela
     loaded_model = load_model()
@@ -291,14 +313,14 @@ def kmeans_run():
     loaded_scaler.mean_ = np.array(loaded_model["scaler_mean"])
     loaded_scaler.scale_ = np.array(loaded_model["scaler_scale"])
 
-    # Predikcija za novu knjigu
-    new_book = [250, 1000, 0, 1]  # Primer: godina 2022, 300 stranica, tvrdi povez
-    new_book_scaled = loaded_scaler.transform([new_book])[0].tolist()
-    cluster = predict(new_book_scaled, loaded_centers)
-    print(f"Nova knjiga pripada klasteru {cluster}")
+    # # Predikcija za novu knjigu u svrhe testiranja
+    # new_book = [250, 1000, 0, 1]
+    # new_book_scaled = loaded_scaler.transform([new_book])[0].tolist()
+    # cluster = predict(new_book_scaled, loaded_centers)
+    # print(f"Nova knjiga pripada klasteru {cluster}")
 
     # Analiza inercije (Metod lakta)
-    inertia_values = []
+    # inertia_values = []
 
     # for k in range(1, 20):
     #     _, _, inertia = k_means(X, k)
@@ -308,7 +330,7 @@ def kmeans_run():
     # # Vizualizacija inercije
     # plt.figure(figsize=(10, 6))
     # plt.plot(range(1, 20), inertia_values, 'bo-')
-    # plt.title("Metod lakta za određivanje optimalnog broja klastera")
-    # plt.xlabel("Broj klastera (K)")
-    # plt.ylabel("Inercija")
+    # plt.title("Elbow Method for determining the optimal number of clusters")
+    # plt.xlabel("Number of Clusters (K)")
+    # plt.ylabel("Inertia")
     # plt.show()

@@ -32,12 +32,15 @@ def custom_train_test_split(X, y, test_size=0.2):
 
 # Ova klasa implementira prilagođeno min-max skaliranje podataka.
 class CustomMinMaxScaler:
+
+    # Inicijalizacija opsega skaliranja i postavljanje atributa za minimum i skalu
     def __init__(self, feature_range=(0, 1)):
         self.feature_range = feature_range
         self.min_ = None
         self.scale_ = None
 
     def fit(self, X):
+        # Izračunavanje minimalnih vrednosti i skale za svaku kolonu u X
         X = np.array(X)
         self.min_ = X.min(axis=0)
         self.scale_ = X.max(axis=0) - self.min_
@@ -46,6 +49,7 @@ class CustomMinMaxScaler:
         return self
 
     def transform(self, X):
+        # Skaliranje podataka X na zadati opseg
         X = np.array(X)
         X_scaled = (X - self.min_) / self.scale_
         X_scaled = (
@@ -58,6 +62,7 @@ class CustomMinMaxScaler:
         return self.fit(X).transform(X)
 
     def inverse_transform(self, X):
+        # Vraća skalirane podatke X nazad u originalni opseg
         X = np.array(X)
         X_original = (X - self.feature_range[0]) / (
             self.feature_range[1] - self.feature_range[0]

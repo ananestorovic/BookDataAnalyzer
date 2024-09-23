@@ -132,22 +132,22 @@ def train_and_evaluate_logistic_regression_models():
 # uzoraka, koji god je manji.
 def custom_balance_classes(X, y, target_samples=1800):
 
-    # Spojimo X i y za lakšu manipulaciju
+    # Spajaju se X i y za lakšu manipulaciju
     df = pd.concat([X, y], axis=1)
     target_column = y.name
 
-    # Inicijalizujmo liste za balansirane podatke
+    # Inicijalizuju se liste za balansirane podatke
     balanced_dfs = []
 
     for class_label, count in Counter(y).items():
-        # Izdvojimo sve uzorke ove klase
+        # Izdvajaju se svi uzorci ove klase
         class_df = df[df[target_column] == class_label]
 
         if count < target_samples:
-            # Ako je broj uzoraka manji od ciljanog, zadržimo sve originalne uzorke
+            # Ako je broj uzoraka manji od ciljanog, zadržavaju se svi originalni uzorci
             balanced_dfs.append(class_df)
         else:
-            # Ako je broj uzoraka veći od ciljanog, smanjimo na ciljani broj
+            # Ako je broj uzoraka veći od ciljanog, smanjuju se na ciljani broj
             balanced_dfs.append(class_df.sample(n=target_samples, random_state=42))
 
     # Spojanje balansiranih klasa
