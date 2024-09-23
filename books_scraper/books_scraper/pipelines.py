@@ -15,10 +15,10 @@ class BooksScraperPipeline:
 
     def open_spider(self, spider):
         self.connection = psycopg2.connect(
-            host='localhost',
-            user='postgres',
-            password='postgres',
-            database='books_database'
+            host="localhost",
+            user="postgres",
+            password="postgres",
+            database="books_database",
         )
         self.cursor = self.connection.cursor()
 
@@ -28,22 +28,25 @@ class BooksScraperPipeline:
 
     def process_item(self, item, spider):
         try:
-            self.cursor.execute("""
+            self.cursor.execute(
+                """
                         INSERT INTO books (code, title, author, price, category, publisher, binding, year, format, pages, description) 
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """, (
-                item.get('code'),
-                item.get('title'),
-                item.get('author'),
-                item.get('price'),
-                item.get('category'),
-                item.get('publisher'),
-                item.get('binding'),
-                item.get('year'),
-                item.get('format'),
-                item.get('pages'),
-                item.get('description')
-            ))
+                    """,
+                (
+                    item.get("code"),
+                    item.get("title"),
+                    item.get("author"),
+                    item.get("price"),
+                    item.get("category"),
+                    item.get("publisher"),
+                    item.get("binding"),
+                    item.get("year"),
+                    item.get("format"),
+                    item.get("pages"),
+                    item.get("description"),
+                ),
+            )
             self.connection.commit()
         except psycopg2.Error as e:
             self.connection.rollback()

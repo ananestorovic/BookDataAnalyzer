@@ -1,11 +1,13 @@
 import pandas as pd
-from sklearn.multiclass import OneVsRestClassifier
+from matplotlib import pyplot as plt
 from sqlalchemy import create_engine
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, ConfusionMatrixDisplay
 import joblib
+from collections import Counter
+from imblearn.over_sampling import SMOTE
+
+from books_analysis.CustomLogisticRegression import CustomLogisticRegression
+from books_analysis.linear_regression import custom_train_test_split
 
 
 # Funkcija koja kategorizuje cene knjiga u definisane opsege
@@ -26,78 +28,137 @@ def categorize_book_price(price):
 
 def train_and_evaluate_logistic_regression_models():
     # Kreiranje konekcije ka PostgreSQL bazi podataka
-    db_url = 'postgresql+psycopg2://postgres:postgres@localhost:5432/books_database'
+    db_url = "postgresql+psycopg2://postgres:postgres@localhost:5432/books_database"
     db_engine = create_engine(db_url)
 
     # Učitavanje podataka iz tabele
-    books_df = pd.read_sql_table('preprocessed_books', con=db_engine)
+    books_df = pd.read_sql_table("preprocessed_books", con=db_engine)
 
     # Uklanjanje kolona koje nece biti koriscene prilikom treniranja
-    X = books_df.drop(columns=['code', 'title', 'author', 'price', 'format', 'category', 'publisher', 'description'])
-    y = books_df['price']
+    X = books_df.drop(
+        columns=[
+            "code",
+            "title",
+            "author",
+            "price",
+            "format",
+            "category",
+            "publisher",
+            "description",
+        ]
+    )
+    y = books_df["price"]
+
+    # Pretvaranje 'year' i 'pages' u integer vrednosti
+    X["year"] = X["year"].astype(int)
+    X["pages"] = X["pages"].astype(int)
 
     # One Hot Encoding za kolonu 'binding' koja samo sadrži vrednosti 'Tvrd' i 'Broš'
-    X = pd.get_dummies(X, columns=['binding'], dtype=int)
+    X = pd.get_dummies(X, columns=["binding"], dtype=int)
 
     # Konverzija kolone 'price' u numerički tip (float)
-    y = books_df['price'].astype(float)
+    y = books_df["price"].astype(float)
 
     # Kategorizacija cene knjige u opsege na osnovu funkcije categorize_price
     y_categorical = y.apply(categorize_book_price)
 
     # Podela podataka na trening i test set
-    X_train, X_test, y_train_categorical, y_test = train_test_split(X, y_categorical, test_size=0.2)
-    X_train = X_train.to_numpy().reshape(-1, X_train.shape[1])
-    X_test = X_test.to_numpy().reshape(-1, X_test.shape[1])
-    y_train_categorical = y_train_categorical.to_numpy().ravel()
-    y_test = y_test.to_numpy().ravel()
+    X_train, X_test, y_train, y_test = custom_train_test_split(
+        X, y_categorical, test_size=0.2
+    )
+    # Prikaz distribucije klasa pre balansiranja
+    print("Distribucija klasa pre balansiranja:")
+    print(Counter(y_train))
 
-    # Skaliranje podataka kako bi se svi podaci doveli u isti raspon vrednosti
-    scaling = MinMaxScaler()
-    X_train_scaled = scaling.fit_transform(X_train)
-    X_test_scaled = scaling.transform(X_test)
+    # Primena SMOTE za balansiranje klasa
+    smote = SMOTE(random_state=42)
+    X_train_balanced, y_train_balanced = custom_balance_classes(X_train, y_train)
+    # Prikaz distribucije klasa nakon balansiranja
+    print("Distribucija klasa nakon balansiranja:")
+    print(Counter(y_train_balanced))
 
-    # One-vs-Rest Logisticka regresija
-    oVr_logistic_model = OneVsRestClassifier(LogisticRegression())
-    oVr_logistic_model.fit(X_train_scaled, y_train_categorical)
+    # One-vs-Rest Logistička regresija
+    ovr_model = CustomLogisticRegression(
+        max_iter=10, eta0=0.05, alpha=0.005, multi_class="ovr"
+    )
+    print("Treniram ovr")
+    ovr_model.fit(X_train, y_train)
+    ovr_predictions = ovr_model.predict(X_test)
 
-    # Predikcija
-    oVr_predicted_labels = oVr_logistic_model.predict(X_test_scaled)
+    # Multinomijalna Logistička regresija
+    multi_model = CustomLogisticRegression(
+        max_iter=15, eta0=0.1, alpha=0.001, multi_class="multinomial"
+    )
+    print("Treniram multi")
+    multi_model.fit(X_train, y_train)
+    multi_predictions = multi_model.predict(X_test)
 
-    print("One-vs-Rest (OvR) Logistic Regression:")
-    print(oVr_predicted_labels)
+    # Evaluacija modela
+    print("One-vs-Rest Logistic Regression:")
+    print(f"Accuracy: {accuracy_score(y_test, ovr_predictions):.2f}")
+    print(
+        f"F1 Score (Weighted): {f1_score(y_test, ovr_predictions, average='weighted'):.2f}"
+    )
 
-    # Multinomijalna Logisticka  regresija
-    multi_logistic_model = LogisticRegression(solver='lbfgs', max_iter=1000)
-    multi_logistic_model.fit(X_train_scaled, y_train_categorical)
-    # Predikcija
-    multi_predicted_labels = multi_logistic_model.predict(X_test_scaled)
+    print("\nMultinomial Logistic Regression:")
+    print(f"Accuracy: {accuracy_score(y_test, multi_predictions):.2f}")
+    print(
+        f"F1 Score (Weighted): {f1_score(y_test, multi_predictions, average='weighted'):.2f}"
+    )
 
-    print("Multinomial Logistic Regression:")
-    print(multi_predicted_labels)
-
-    # Izračunavanje preciznosti za oba modela
-    oVr_accuracy_result = accuracy_score(y_test, oVr_predicted_labels)
-    multi_accuracy_result = accuracy_score(y_test, multi_predicted_labels)
-
-    # Izračunavanje F1 skora za oba modela
-    oVr_f1_result = f1_score(y_test, oVr_predicted_labels, average='weighted')
-    multi_f1_result = f1_score(y_test, multi_predicted_labels, average='weighted')
-
-    # Prikaz rezultata za One-vs-Rest logističku regresiju
-    print("Results for One-vs-Rest Logistic Regression:")
-    print(f"Accuracy: {oVr_accuracy_result:.2f}")
-    print(f"F1 Score (Weighted): {oVr_f1_result:.2f}")
-
-    # Prikaz rezultata za Multinomial logističku regresiju
-    print("\nResults for Multinomial Logistic Regression:")
-    print(f"Accuracy: {multi_accuracy_result:.2f}")
-    print(f"F1 Score (Weighted): {multi_f1_result:.2f}")
-
-    # Čuvanje modela u fajlove za kasniju upotrebu
-    joblib.dump(oVr_logistic_model, 'ovr_logistic_regression_model.pkl')
-    joblib.dump(multi_logistic_model, 'multinomial_logistic_regression_model.pkl')
+    # Čuvanje modela
+    # joblib.dump(ovr_model, 'ovr_logistic_regression_model.pkl')
+    # joblib.dump(multi_model, 'multinomial_logistic_regression_model.pkl')
 
     print("Models have been stored successfully.")
 
+    # Prikaz konfuzione matrice za oba modela
+    oVr_conf_matrix = ConfusionMatrixDisplay.from_predictions(y_test, ovr_predictions)
+    oVr_conf_matrix.ax_.set_title(
+        "Confusion Matrix for One-vs-Rest Logistic Regression"
+    )
 
+    multi_conf_matrix = ConfusionMatrixDisplay.from_predictions(
+        y_test, multi_predictions
+    )
+    multi_conf_matrix.ax_.set_title(
+        "Confusion Matrix for Multinomial Logistic Regression"
+    )
+
+    plt.show()
+
+
+# Balansira klase koristeći tehniku oversampling-a, sa ograničenjem na ciljani broj uzoraka ili originalni broj
+# uzoraka, koji god je manji.
+def custom_balance_classes(X, y, target_samples=1800):
+
+    # Spojimo X i y za lakšu manipulaciju
+    df = pd.concat([X, y], axis=1)
+    target_column = y.name
+
+    # Inicijalizujmo liste za balansirane podatke
+    balanced_dfs = []
+
+    for class_label, count in Counter(y).items():
+        # Izdvojimo sve uzorke ove klase
+        class_df = df[df[target_column] == class_label]
+
+        if count < target_samples:
+            # Ako je broj uzoraka manji od ciljanog, zadržimo sve originalne uzorke
+            balanced_dfs.append(class_df)
+        else:
+            # Ako je broj uzoraka veći od ciljanog, smanjimo na ciljani broj
+            balanced_dfs.append(class_df.sample(n=target_samples, random_state=42))
+
+    # Spojanje balansiranih klasa
+    balanced_df = (
+        pd.concat(balanced_dfs, axis=0)
+        .sample(frac=1, random_state=42)
+        .reset_index(drop=True)
+    )
+
+    # Razdvajanje feature i target
+    X_balanced = balanced_df.drop(columns=[target_column])
+    y_balanced = balanced_df[target_column]
+
+    return X_balanced, y_balanced
