@@ -79,7 +79,7 @@ def train_and_evaluate_logistic_regression_models():
 
     # One-vs-Rest Logistička regresija
     ovr_model = CustomLogisticRegression(
-        max_iter=10, eta0=0.05, alpha=0.005, multi_class="ovr"
+        max_iterations=10, eta0=0.05, alpha=0.005, multi_class="ovr"
     )
     print("Treniram ovr")
     ovr_model.fit(X_train, y_train)
@@ -87,7 +87,7 @@ def train_and_evaluate_logistic_regression_models():
 
     # Multinomijalna Logistička regresija
     multi_model = CustomLogisticRegression(
-        max_iter=15, eta0=0.1, alpha=0.001, multi_class="multinomial"
+        max_iterations=15, eta0=0.1, alpha=0.001, multi_class="multinomial"
     )
     print("Treniram multi")
     multi_model.fit(X_train, y_train)

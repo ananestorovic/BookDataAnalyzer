@@ -130,7 +130,7 @@ def process_and_train_linear_regression_model():
     print(f"MSE za linear regression model: {mse_linear_regression_model}")
 
     # Cuvanje modela
-    joblib.dump(custom_model, "custom_linear_regression_model.pkl")
-    joblib.dump(linear_regression_model, "linear_regression_model.pkl")
+    # joblib.dump(custom_model, "custom_linear_regression_model.pkl")
+    # joblib.dump(linear_regression_model, "linear_regression_model.pkl")
 
     print("Models have been stored successfully.")

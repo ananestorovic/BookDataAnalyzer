@@ -291,11 +291,11 @@ def kmeans_run():
     loaded_scaler.mean_ = np.array(loaded_model["scaler_mean"])
     loaded_scaler.scale_ = np.array(loaded_model["scaler_scale"])
 
-    # # Predikcija za novu knjigu
-    # new_book = [250, 1000, 0, 1]  # Primer: godina 2022, 300 stranica, tvrdi povez
-    # new_book_scaled = loaded_scaler.transform([new_book])[0].tolist()
-    # cluster = predict(new_book_scaled, loaded_centers)
-    # print(f"Nova knjiga pripada klasteru {cluster}")
+    # Predikcija za novu knjigu
+    new_book = [250, 1000, 0, 1]  # Primer: godina 2022, 300 stranica, tvrdi povez
+    new_book_scaled = loaded_scaler.transform([new_book])[0].tolist()
+    cluster = predict(new_book_scaled, loaded_centers)
+    print(f"Nova knjiga pripada klasteru {cluster}")
 
     # Analiza inercije (Metod lakta)
     inertia_values = []

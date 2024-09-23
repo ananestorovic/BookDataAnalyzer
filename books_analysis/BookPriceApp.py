@@ -74,7 +74,7 @@ class BookPricePredictionApp:
         )
         self.predict_button.grid(row=8, column=1)
 
-    def predict_price(self, model):
+    def predict_price(self):
         try:
             # Prikupljanje podataka koje je uneo korisnik
             year = int(self.year_entry.get())

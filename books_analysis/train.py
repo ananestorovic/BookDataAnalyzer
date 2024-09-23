@@ -7,13 +7,13 @@ from books_analysis.logistic_regression import (
 
 def main():
     # Pozivanje funkcije za procesiranje i treniranje linearnog regresionog modela
-    # process_and_train_linear_regression_model()
+     process_and_train_linear_regression_model()
 
     # Pozivanje funkcije za treniranje i evaluaciju logistickog regresivnog modela
-    #train_and_evaluate_logistic_regression_models()
+    # train_and_evaluate_logistic_regression_models()
 
     # Pozivanje funkcije za k-Means algoritam
-     kmeans_run()
+    #  kmeans_run()
 
 
 if __name__ == "__main__":
